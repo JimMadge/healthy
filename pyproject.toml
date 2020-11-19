@@ -1,0 +1,21 @@
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "healthy"
+version = "0.1.0"
+description = "Restart docker containers which fail their HEALTHCHECK"
+license = "MIT"
+authors = ["Jim Madge <jmmadge@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+docker = "*"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+flake8 = "*"
+
+[tool.poetry.scripts]
+healthy = "healthy.__main__:main"
