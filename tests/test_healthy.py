@@ -48,7 +48,10 @@ def healthy_container(tmp_path, docker_client):
 
     # Stop container and remove image
     container.stop()
-    docker_client.images.remove("healthy_image")
+    docker_client.images.remove(
+        "healthy_image",
+        force=True
+    )
 
 
 @pytest.fixture
@@ -89,7 +92,10 @@ def unhealthy_container(tmp_path, docker_client):
 
     # Stop container and remove image
     container.stop()
-    docker_client.images.remove("unhealthy_image")
+    docker_client.images.remove(
+        "unhealthy_image",
+        force=True
+    )
 
 
 def test_healthy(capsys, healthy_container):
@@ -106,3 +112,5 @@ def test_unhealthy(capsys, unhealthy_container):
     assert (
         captured.out.strip() == "unhealthy_container - unhealthy - restarting"
     )
+    unhealthy_container.reload()
+    assert unhealthy_container.attrs["State"]["Health"]["Status"] == "starting"
