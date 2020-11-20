@@ -10,7 +10,7 @@ license = "MIT"
 authors = ["Jim Madge <jmmadge@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 docker = "*"
 
 [tool.poetry.dev-dependencies]

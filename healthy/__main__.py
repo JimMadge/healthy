@@ -13,7 +13,9 @@ def health_check(container):
     state = container.attrs["State"]
 
     if "Health" in state.keys():
-        if (status := state["Health"]["Status"]) == "unhealthy":
+        status = state["Health"]["Status"]
+
+        if status == "unhealthy":
             output(name, status, "restarting")
             container.restart()
         else:
