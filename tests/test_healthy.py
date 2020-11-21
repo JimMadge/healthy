@@ -1,6 +1,6 @@
 import contextlib
 import docker
-from healthy.__main__ import health_check, output
+from healthy.__main__ import health_check, output, main
 import pytest
 from textwrap import dedent
 from time import sleep
@@ -101,3 +101,22 @@ def test_output(capsys):
     stdout = capsys.readouterr().out
 
     assert stdout.strip() == "name - status - action"
+
+
+def test_main(capsys, tmp_path, docker_client):
+    with example_container("testa", healthy_dockerfile, tmp_path,
+                           docker_client):
+        with example_container("testb", unhealthy_dockerfile, tmp_path,
+                               docker_client):
+            with example_container("testc", no_health_dockerfile, tmp_path,
+                                   docker_client):
+                main()
+                stdout = capsys.readouterr().out
+
+    expected_output = dedent("""\
+        testc_container - no health check - skipping
+        testb_container - unhealthy - restarting
+        testa_container - healthy - skipping
+        """)
+
+    assert stdout == expected_output
