@@ -37,9 +37,10 @@ def example_container(name, dockerfile_text, path, docker_client):
 
     # Wait for container to start
     container.reload()
-    while container.attrs["State"]["Health"]["Status"] == "starting":
-        sleep(1)
-        container.reload()
+    if "Health" in container.attrs["State"].keys():
+        while container.attrs["State"]["Health"]["Status"] == "starting":
+            sleep(1)
+            container.reload()
 
     try:
         yield container
@@ -72,7 +73,7 @@ no_health_dockerfile = dedent("""\
 testdata = [
     ("healthy", healthy_dockerfile, "healthy", "skipping"),
     ("unhealthy", unhealthy_dockerfile, "unhealthy", "restarting"),
-    # ("nohealth", no_health_dockerfile, "no health check", "skipping"),
+    ("nohealth", no_health_dockerfile, "no health check", "skipping"),
 ]
 
 
