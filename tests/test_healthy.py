@@ -1,6 +1,6 @@
 import contextlib
 import docker
-from healthy.__main__ import health_check, output, main
+from healthy.__main__ import health_check, get_health_status, output, main
 import pytest
 from textwrap import dedent
 from time import sleep
@@ -13,10 +13,6 @@ def docker_client():
 
 @contextlib.contextmanager
 def example_container(name, dockerfile_text, path, docker_client):
-    # print(name)
-    # print(dockerfile)
-    # print(type(dockerfile))
-    # print(path)
     # Write Dockerfile
     dockerfile = path / "Dockerfile"
     dockerfile.write_text(dockerfile_text)
@@ -94,6 +90,23 @@ def test_health_check(capsys, tmp_path, docker_client, name, dockerfile,
         if expected_action == "restarting":
             container.reload()
             assert container.attrs["State"]["Health"]["Status"] == "starting"
+
+
+testdata = [
+    ("healthy", healthy_dockerfile, "healthy"),
+    ("unhealthy", unhealthy_dockerfile, "unhealthy"),
+    ("nohealth", no_health_dockerfile, None),
+]
+
+
+@pytest.mark.parametrize("name,dockerfile,expected_status", testdata)
+def test_get_health_status(tmp_path, docker_client, name, dockerfile,
+                           expected_status):
+    path = tmp_path / name
+    path.mkdir()
+
+    with example_container(name, dockerfile, path, docker_client) as container:
+        assert get_health_status(container) == expected_status
 
 
 def test_output(capsys):
