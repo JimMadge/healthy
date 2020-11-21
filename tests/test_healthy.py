@@ -1,6 +1,6 @@
 import contextlib
 import docker
-from healthy.__main__ import health_check
+from healthy.__main__ import health_check, output
 import pytest
 from textwrap import dedent
 from time import sleep
@@ -94,3 +94,10 @@ def test_health_check(capsys, tmp_path, docker_client, name, dockerfile,
         if expected_action == "restarting":
             container.reload()
             assert container.attrs["State"]["Health"]["Status"] == "starting"
+
+
+def test_output(capsys):
+    output("name", "status", "action")
+    stdout = capsys.readouterr().out
+
+    assert stdout.strip() == "name - status - action"
