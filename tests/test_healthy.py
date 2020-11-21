@@ -1,3 +1,4 @@
+import contextlib
 import docker
 from healthy.__main__ import health_check
 import pytest
@@ -10,30 +11,26 @@ def docker_client():
     return docker.from_env()
 
 
-@pytest.fixture
-def healthy_container(tmp_path, docker_client):
-    # Create temporary directory
-    d = tmp_path / "healthy"
-    d.mkdir()
+@contextlib.contextmanager
+def example_container(name, dockerfile_text, path, docker_client):
+    # print(name)
+    # print(dockerfile)
+    # print(type(dockerfile))
+    # print(path)
+    # Write Dockerfile
+    dockerfile = path / "Dockerfile"
+    dockerfile.write_text(dockerfile_text)
 
-    # Write 'healthy' Dockerfile
-    dockerfile = d / "Dockerfile"
-    dockerfile.write_text(dedent("""\
-        FROM alpine:latest
-
-        HEALTHCHECK --interval=10s CMD true
-    """))
-
-    # Create 'healthy' container
+    # Create  container
     docker_client.images.build(
-        path=str(d),
+        path=str(path),
         rm=True,
-        tag="healthy_image"
+        tag=f"{name}_image"
     )
     container = docker_client.containers.run(
-        "healthy_image",
+        f"{name}_image",
         command="sleep 2m",
-        name="healthy_container",
+        name=f"{name}_container",
         detach=True,
         auto_remove=True
     )
@@ -44,73 +41,55 @@ def healthy_container(tmp_path, docker_client):
         sleep(1)
         container.reload()
 
-    yield container
-
-    # Stop container and remove image
-    container.stop()
-    docker_client.images.remove(
-        "healthy_image",
-        force=True
-    )
-
-
-@pytest.fixture
-def unhealthy_container(tmp_path, docker_client):
-    # Create temporary directory
-    d = tmp_path / "unhealthy"
-    d.mkdir()
-
-    # Write 'unhealthy' Dockerfile
-    dockerfile = d / "Dockerfile"
-    dockerfile.write_text(dedent("""\
-        FROM alpine:latest
-
-        HEALTHCHECK --interval=10s CMD false
-    """))
-
-    # Create 'unhealthy' container
-    docker_client.images.build(
-        path=str(d),
-        rm=True,
-        tag="unhealthy_image"
-    )
-    container = docker_client.containers.run(
-        "unhealthy_image",
-        command="sleep 2m",
-        name="unhealthy_container",
-        detach=True,
-        auto_remove=True
-    )
-
-    # Wait for container to start
-    container.reload()
-    while container.attrs["State"]["Health"]["Status"] == "starting":
-        sleep(1)
-        container.reload()
-
-    yield container
-
-    # Stop container and remove image
-    container.stop()
-    docker_client.images.remove(
-        "unhealthy_image",
-        force=True
-    )
+    try:
+        yield container
+    finally:
+        # Stop container and remove image
+        container.stop()
+        docker_client.images.remove(
+            f"{name}_image",
+            force=True
+        )
 
 
-def test_healthy(capsys, healthy_container):
-    health_check(healthy_container)
+healthy_dockerfile = dedent("""\
+    FROM alpine:latest
 
-    captured = capsys.readouterr()
-    assert captured.out.strip() == "healthy_container - healthy - skipping"
+    HEALTHCHECK --interval=10s CMD true
+    """)
+
+unhealthy_dockerfile = dedent("""\
+    FROM alpine:latest
+
+    HEALTHCHECK --interval=10s CMD false
+    """)
+
+no_health_dockerfile = dedent("""\
+    FROM alpine:latest
+    """)
 
 
-def test_unhealthy(capsys, unhealthy_container):
-    health_check(unhealthy_container)
+testdata = [
+    ("healthy", healthy_dockerfile, "healthy", "skipping"),
+    ("unhealthy", unhealthy_dockerfile, "unhealthy", "restarting"),
+    # ("nohealth", no_health_dockerfile, "no health check", "skipping"),
+]
 
-    captured = capsys.readouterr()
-    assert (
-        captured.out.strip() == "unhealthy_container - unhealthy - restarting"
-    )
-    unhealthy_container.reload()
-    assert unhealthy_container.attrs["State"]["Health"]["Status"] == "starting"
+
+@pytest.mark.parametrize("name,dockerfile,expected_status,expected_action",
+                         testdata)
+def test_health_check(capsys, tmp_path, docker_client, name, dockerfile,
+                      expected_status, expected_action):
+    path = tmp_path / name
+    path.mkdir()
+
+    with example_container(name, dockerfile, path, docker_client) as container:
+        health_check(container)
+
+        stdout = capsys.readouterr().out
+        expected = f"{name}_container - {expected_status} - {expected_action}"
+        assert stdout.strip() == expected
+
+        if expected_action == "restarting":
+            container.reload()
+            assert container.attrs["State"]["Health"]["Status"] == "starting"
