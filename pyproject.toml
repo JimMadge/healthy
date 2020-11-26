@@ -15,6 +15,7 @@ docker = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
+pytest-cov = "*"
 flake8 = "*"
 
 [tool.poetry.scripts]
