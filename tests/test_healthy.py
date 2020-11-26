@@ -1,6 +1,7 @@
 import contextlib
 import docker
 from healthy.__main__ import health_check, get_health_status, output, main
+from healthy import __main__
 import pytest
 from textwrap import dedent
 from time import sleep
@@ -90,6 +91,26 @@ def test_health_check(capsys, tmp_path, docker_client, name, dockerfile,
         if expected_action == "restarting":
             container.reload()
             assert container.attrs["State"]["Health"]["Status"] == "starting"
+
+
+def test_health_check_unknown_status(capsys, tmp_path, monkeypatch,
+                                     docker_client):
+    def mock_get_health_status(container):
+        return "unknown"
+
+    monkeypatch.setattr(__main__, "get_health_status", mock_get_health_status)
+
+    name = "unknown"
+    path = tmp_path / name
+    path.mkdir()
+
+    with example_container(name, healthy_dockerfile, path,
+                           docker_client) as container:
+        health_check(container)
+
+        stdout = capsys.readouterr().out
+        expected = f"{name}_container - unknown - skipping"
+        assert stdout.strip() == expected
 
 
 testdata = [
