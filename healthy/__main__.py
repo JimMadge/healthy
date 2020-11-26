@@ -40,5 +40,5 @@ def output(name, status, action):
     print(f"{name} - {status} - {action}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma no cover
     main()
