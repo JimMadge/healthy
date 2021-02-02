@@ -11,8 +11,23 @@ jobs:
   update_release_draft:
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v5
+      - name: Draft release
+        uses: release-drafter/release-drafter@v5
         with:
           config-name: release_drafter.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+      - name: Setup poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Build wheel
+        run: poetry build -f wheel
+      - name: Upload wheel to release
+        uses: AButler/upload-release-assets@v2.0
+        with:
+          files: './dist/*.whl'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: ${{ steps.draft_release.outputs.tag_name }}
