@@ -1,4 +1,5 @@
 import docker  # type: ignore
+from docker.models.containers import Container  # type: ignore
 from typing import Optional
 
 
@@ -9,7 +10,7 @@ def main() -> None:
         health_check(container)
 
 
-def health_check(container: docker.Container) -> None:
+def health_check(container: Container) -> None:
     name = container.name
     status = get_health_status(container)
 
@@ -28,7 +29,7 @@ def health_check(container: docker.Container) -> None:
         output(name, status, "skipping")
 
 
-def get_health_status(container: docker.Container) -> Optional[str]:
+def get_health_status(container: Container) -> Optional[str]:
     state = container.attrs["State"]
 
     if "Health" in state.keys():
