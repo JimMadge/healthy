@@ -17,6 +17,7 @@ docker = "*"
 pytest = "*"
 pytest-cov = "*"
 flake8 = "*"
+mypy = "*"
 
 [tool.poetry.scripts]
 healthy = "healthy.__main__:main"
