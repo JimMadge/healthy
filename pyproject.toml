@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "healthy"
-version = "0.1.0"
+version = "0.2.0"
 description = "Restart docker containers which fail their HEALTHCHECK"
 license = "MIT"
 authors = ["Jim Madge <jmmadge@gmail.com>"]
