@@ -18,11 +18,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install test dependencies
         run: |
-          pip install flake8 pytest pytest-cov
+          pip install flake8 mypy pytest pytest-cov
       - name: Lint
         run: flake8 --count --show-source --statistics
       - name: Build
         run: pip install .
+      - name: Check type hinting
+        run: mypy healthy
       - name: Test
         run: pytest -v --cov=./healthy --cov-report=xml
       - name: Upload coverage to Codecov
