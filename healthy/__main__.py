@@ -1,14 +1,16 @@
-import docker
+import docker  # type: ignore
+from docker.models.containers import Container  # type: ignore
+from typing import Optional
 
 
-def main():
+def main() -> None:
     client = docker.from_env()
 
     for container in client.containers.list():
         health_check(container)
 
 
-def health_check(container):
+def health_check(container: Container) -> None:
     name = container.name
     status = get_health_status(container)
 
@@ -27,16 +29,16 @@ def health_check(container):
         output(name, status, "skipping")
 
 
-def get_health_status(container):
+def get_health_status(container: Container) -> Optional[str]:
     state = container.attrs["State"]
 
     if "Health" in state.keys():
-        return state["Health"]["Status"]
+        return str(state["Health"]["Status"])
     else:
         return None
 
 
-def output(name, status, action):
+def output(name: str, status: str, action: str) -> None:
     print(f"{name} - {status} - {action}")
 
 
